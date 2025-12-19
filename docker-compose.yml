@@ -6,7 +6,6 @@ services:
     container_name: pdf-renamer
     volumes:
       - /mnt/scan:/mnt/scan:rw
-      # - ./watch:/app/watch
-      # - ./config.yaml:/app/config.yaml
-    network_mode: host
+
+    # network_mode: host
     restart: unless-stopped
