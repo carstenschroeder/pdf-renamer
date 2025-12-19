@@ -5,7 +5,7 @@ import re
 import yaml
 import requests
 from pathlib import Path
-from watchdog.observers import Observer
+from watchdog.observers.polling import PollingObserver
 from watchdog.events import FileSystemEventHandler
 from typing import Dict, Optional
 
@@ -35,7 +35,8 @@ class Config:
         
         self.retry_interval = self.config['retry']['interval_seconds']
         self.max_attempts = self.config['retry']['max_attempts']
-        
+        self.polling_interval = self.config.get('polling', {}).get('interval_seconds', 5)
+
         logging.basicConfig(
             level=getattr(logging, self.config['logging']['level']),
             format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -253,7 +254,7 @@ def main():
     process_existing_files(processor)
 
     event_handler = PDFWatchHandler(processor)
-    observer = Observer()
+    observer = PollingObserver(timeout=config.polling_interval)
     observer.schedule(event_handler, str(config.watch_dir), recursive=False)
     observer.start()
 

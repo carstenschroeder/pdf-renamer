@@ -21,6 +21,9 @@ ollama:
     Eindeutige Nummern oder IDs, wie Versicherungsnummer, Vertragsnummern oder Kontonummern, auch aufnehmen, falls sie wichtig sind. Die Klein- oder Grossschreibung nicht ändern.
     Die Antwort soll nur aus dem Namen bestehen, der als Dateiname verwendet werden kann!
 
+polling:
+  interval_seconds: 5
+  
 retry:
   interval_seconds: 3600
   max_attempts: 3
