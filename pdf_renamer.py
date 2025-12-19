@@ -21,7 +21,6 @@ class Config:
 
         self.docling_host = self.config['docling']['host']
         self.docling_port = self.config['docling']['port']
-        self.docling_endpoint = self.config['docling']['endpoint']
         self.docling_format = self.config['docling']['format']
 
         self.docling_enable_ocr = self.config['docling'].get('enable_ocr', True)
@@ -52,8 +51,8 @@ class PDFProcessor:
         
     def extract_text_from_pdf(self, pdf_path: Path) -> Optional[str]:
         try:
-            docling_url = f"http://{self.config.docling_host}:{self.config.docling_port}{self.config.docling_endpoint}"
-            
+            docling_url = f"http://{self.config.docling_host}:{self.config.docling_port}/v1/convert/file"
+
             with open(pdf_path, 'rb') as f:
                 files = {'files': (pdf_path.name, f, 'application/pdf')}
                 data = {
@@ -64,12 +63,12 @@ class PDFProcessor:
                     'image_export_mode': self.config.docling_image_export_mode,
                     'ocr_engine': self.config.docling_ocr_engine
                 }
-                
+
                 response = requests.post(docling_url, files=files, data=data, timeout=600)
                 response.raise_for_status()
-                
+
                 result = response.json()
-                
+
                 doc = result.get('document', {})
                 if self.config.docling_format == 'md':
                     return doc.get('md_content', '')
@@ -77,7 +76,7 @@ class PDFProcessor:
                     return doc.get('text_content', '')
                 else:
                     return doc.get('md_content', doc.get('text_content', ''))
-                
+
         except requests.exceptions.HTTPError as e:
             self.logger.error(f"Fehler beim Extrahieren von Text aus {pdf_path}: {e} - Response: {e.response.text}")
             return None

@@ -3,7 +3,6 @@ watch_directory: "/mnt/scan"
 docling:
   host: 192.168.0.168
   port: 5001
-  endpoint: "/v1/convert/file"
   format: "md"
   enable_ocr: true
   force_ocr: true
