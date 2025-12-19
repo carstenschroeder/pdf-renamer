@@ -1,0 +1,30 @@
+watch_directory: "/mnt/scan"
+
+docling:
+  host: 192.168.0.168
+  port: 5001
+  endpoint: "/v1/convert/file"
+  format: "md"
+  enable_ocr: true
+  force_ocr: true
+  image_export_mode: "placeholder"
+  ocr_engine: "easyocr"
+
+ollama:
+  host: 192.168.0.168
+  port: 11434
+  model: gpt-oss:20b
+  prompt: > 
+    Ich werde dir nun den Text eines Dokuments geben. Du sollst dazu einen Namen erzeugen, aus dem man den Inhalt des Dokumentserkennen kann.
+    Bei einer Rechnung soll der Namen aus dem Absender, der Rechnungsnummer, dem Datum und dem gekauftem Produkt bestehen, z.B. 'Rechnung_Bäckerei_Schumacher_1740946_01.04.2024_10_Brötchen'.
+    Bei anderen Dokumenten soll der Name aus dem Absender, dem Datum und einer Kurzzusammenfassung des Inhalts in max. 7 Worten bestehen,
+    z.B. 'Versicherung_Allianz_17.05.2023_Kündungsbestätigung_Haftpflichtversicherung_Nr_385563896'.
+    Eindeutige Nummern oder IDs, wie Versicherungsnummer, Vertragsnummern oder Kontonummern, auch aufnehmen, falls sie wichtig sind. Die Klein- oder Grossschreibung nicht ändern.
+    Die Antwort soll nur aus dem Namen bestehen, der als Dateiname verwendet werden kann!
+
+retry:
+  interval_seconds: 5
+  max_attempts: 3
+
+logging:
+  level: "INFO"

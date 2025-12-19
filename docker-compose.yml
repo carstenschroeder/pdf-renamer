@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  pdf-renamer:
+    build: .
+    container_name: pdf-renamer
+    volumes:
+      - /mnt/scan:/mnt/scan:rw
+      # - ./watch:/app/watch
+      # - ./config.yaml:/app/config.yaml
+    network_mode: host
+    restart: unless-stopped
