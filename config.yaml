@@ -23,7 +23,7 @@ ollama:
     Die Antwort soll nur aus dem Namen bestehen, der als Dateiname verwendet werden kann!
 
 retry:
-  interval_seconds: 5
+  interval_seconds: 3600
   max_attempts: 3
 
 logging:

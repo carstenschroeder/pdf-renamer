@@ -183,6 +183,8 @@ class PDFWatchHandler(FileSystemEventHandler):
 
 
 def retry_error_files(processor: PDFProcessor):
+    attempt_pattern = re.compile(r'_attempt(\d+)$')
+
     while True:
         time.sleep(processor.config.retry_interval)
 
@@ -194,14 +196,30 @@ def retry_error_files(processor: PDFProcessor):
 
             for pdf_path in error_files:
                 try:
-                    watch_path = processor.config.watch_dir / pdf_path.name
+                    stem = pdf_path.stem
+                    match = attempt_pattern.search(stem)
+
+                    if match:
+                        attempts = int(match.group(1))
+                        base_stem = stem[:match.start()]
+                    else:
+                        attempts = 1
+                        base_stem = stem
+
+                    if attempts >= processor.config.max_attempts:
+                        processor.logger.warning(f"Max. Versuche erreicht für {pdf_path.name}, wird nicht erneut verarbeitet")
+                        continue
+
+                    new_stem = f"{base_stem}_attempt{attempts + 1}"
+                    watch_path = processor.config.watch_dir / f"{new_stem}{pdf_path.suffix}"
+
                     counter = 1
                     while watch_path.exists():
-                        watch_path = processor.config.watch_dir / f"{pdf_path.stem}_retry_{counter}{pdf_path.suffix}"
+                        watch_path = processor.config.watch_dir / f"{new_stem}_{counter}{pdf_path.suffix}"
                         counter += 1
 
                     pdf_path.rename(watch_path)
-                    processor.logger.info(f"PDF aus error zurück in watch verschoben: {pdf_path.name}")
+                    processor.logger.info(f"PDF aus error zurück in watch verschoben: {pdf_path.name} -> {watch_path.name} (Versuch {attempts + 1})")
 
                 except Exception as e:
                     processor.logger.error(f"Fehler beim Verschieben von {pdf_path.name}: {e}")
