@@ -41,8 +41,6 @@ class Config:
         self.docling_port = self.config['docling']['port']
         self.docling_format = self.config['docling']['format']
 
-        self.docling_enable_ocr = self.config['docling'].get('enable_ocr', True)
-        self.docling_force_ocr = self.config['docling'].get('force_ocr', False)
         self.docling_image_export_mode = self.config['docling'].get('image_export_mode', 'none')
         self.docling_ocr_engine = self.config['docling'].get('ocr_engine', 'easyocr')
 
@@ -50,7 +48,7 @@ class Config:
         self.ollama_port = self.config['ollama']['port']
         self.ollama_model = self.config['ollama']['model']
         self.ollama_prompt = self.config['ollama']['prompt']
-        
+
         self.retry_interval = self.config['retry']['interval_seconds']
         self.max_attempts = self.config['retry']['max_attempts']
         self.polling_interval = self.config.get('polling', {}).get('interval_seconds', 5)
@@ -101,14 +99,16 @@ class DocumentProcessor:
             docling_url = f"http://{self.config.docling_host}:{self.config.docling_port}/v1/convert/file"
             
             mime_type = self.config.get_mime_type(doc_path)
+            
+            force_ocr = doc_path.suffix.lower() == '.pdf' and doc_path.name.startswith("Xerox Scan_")
 
             with open(doc_path, 'rb') as f:
                 files = {'files': (doc_path.name, f, mime_type)}
                 data = {
                     'from_formats': ["docx", "pptx", "html", "image", "pdf", "asciidoc", "md", "xlsx"],
                     'to_formats': [self.config.docling_format],
-                    'do_ocr': self.config.docling_enable_ocr,
-                    'force_ocr': self.config.docling_force_ocr,
+                    'do_ocr': True,
+                    'force_ocr': force_ocr,
                     'image_export_mode': self.config.docling_image_export_mode,
                     'ocr_engine': self.config.docling_ocr_engine
                 }
