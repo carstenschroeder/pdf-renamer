@@ -150,14 +150,17 @@ class PDFProcessor:
             self.logger.error(f"Fehler beim Verarbeiten von {pdf_path.name}: {e}")
             
             if move_to_error_on_fail and pdf_path.exists():
-                error_path = self.config.error_dir / pdf_path.name
-                counter = 1
-                while error_path.exists():
-                    error_path = self.config.error_dir / f"{pdf_path.stem}_{counter}{pdf_path.suffix}"
-                    counter += 1
+                try:
+                    error_path = self.config.error_dir / pdf_path.name
+                    counter = 1
+                    while error_path.exists():
+                        error_path = self.config.error_dir / f"{pdf_path.stem}_{counter}{pdf_path.suffix}"
+                        counter += 1
 
-                pdf_path.rename(error_path)
-                self.logger.error(f"PDF in error verschoben: {pdf_path.name}")
+                    pdf_path.rename(error_path)
+                    self.logger.error(f"PDF in error verschoben: {pdf_path.name}")
+                except OSError as rename_error:
+                    self.logger.error(f"Konnte Datei nicht verschieben: {rename_error}")
             
             return False
             
@@ -173,13 +176,16 @@ class PDFWatchHandler(FileSystemEventHandler):
     def on_created(self, event):
         if event.is_directory:
             return
-        
+
         file_path = Path(event.src_path)
-        
+
         if file_path.suffix.lower() == '.pdf':
-            time.sleep(1)
-            
-            self.processor.process_pdf(file_path)
+            time.sleep(5)  # ggf. Wartezeit anpassen
+
+            try:
+                self.processor.process_pdf(file_path)
+            except Exception as e:
+                self.logger.error(f"Unbehandelter Fehler bei {file_path.name}: {e}")
 
 
 def retry_error_files(processor: PDFProcessor):
@@ -270,9 +276,17 @@ def main():
     except KeyboardInterrupt:
         observer.stop()
         config.logger.info("PDF-Überwachung beendet")
+        raise
 
     observer.join()
 
 
 if __name__ == "__main__":
-    main()
+    while True:
+        try:
+            main()
+        except KeyboardInterrupt:
+            break
+        except Exception as e:
+            logging.error(f"Unerwarteter Fehler, Neustart in 10 Sekunden: {e}")
+            time.sleep(10)
