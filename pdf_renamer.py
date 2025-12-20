@@ -213,8 +213,7 @@ def main():
     config = Config()
 
     if not config.watch_dir.exists():
-        config.logger.error(f"Watch-Verzeichnis existiert nicht: {config.watch_dir}")
-        return
+        raise FileNotFoundError(f"Watch-Verzeichnis existiert nicht: {config.watch_dir}")
     config.processed_dir.mkdir(parents=True, exist_ok=True)
     config.error_dir.mkdir(parents=True, exist_ok=True)
 
