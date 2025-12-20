@@ -1,13 +1,11 @@
-import os
 import time
 import logging
 import re
+import threading
 import yaml
 import requests
 from pathlib import Path
-from watchdog.observers.polling import PollingObserver
-from watchdog.events import FileSystemEventHandler
-from typing import Dict, Optional
+from typing import Optional
 
 
 class Config:
@@ -48,7 +46,6 @@ class PDFProcessor:
     def __init__(self, config: Config):
         self.config = config
         self.logger = config.logger
-        self.processing_files = set()
         
     def extract_text_from_pdf(self, pdf_path: Path) -> Optional[str]:
         try:
@@ -115,12 +112,7 @@ class PDFProcessor:
             self.logger.error(f"Fehler beim Generieren der Zusammenfassung: {e}")
             return None
     
-    def process_pdf(self, pdf_path: Path, move_to_error_on_fail: bool = True) -> bool:
-        if pdf_path in self.processing_files:
-            return False
-            
-        self.processing_files.add(pdf_path)
-        
+    def process_pdf(self, pdf_path: Path) -> bool:
         try:
             self.logger.info(f"Verarbeite PDF: {pdf_path.name}")
             
@@ -149,7 +141,7 @@ class PDFProcessor:
         except Exception as e:
             self.logger.error(f"Fehler beim Verarbeiten von {pdf_path.name}: {e}")
             
-            if move_to_error_on_fail and pdf_path.exists():
+            if pdf_path.exists():
                 try:
                     error_path = self.config.error_dir / pdf_path.name
                     counter = 1
@@ -163,29 +155,6 @@ class PDFProcessor:
                     self.logger.error(f"Konnte Datei nicht verschieben: {rename_error}")
             
             return False
-            
-        finally:
-            self.processing_files.discard(pdf_path)
-
-
-class PDFWatchHandler(FileSystemEventHandler):
-    def __init__(self, processor: PDFProcessor):
-        self.processor = processor
-        self.logger = processor.logger
-        
-    def on_created(self, event):
-        if event.is_directory:
-            return
-
-        file_path = Path(event.src_path)
-
-        if file_path.suffix.lower() == '.pdf':
-            time.sleep(5)  # ggf. Wartezeit anpassen
-
-            try:
-                self.processor.process_pdf(file_path)
-            except Exception as e:
-                self.logger.error(f"Unbehandelter Fehler bei {file_path.name}: {e}")
 
 
 def retry_error_files(processor: PDFProcessor):
@@ -231,19 +200,13 @@ def retry_error_files(processor: PDFProcessor):
                     processor.logger.error(f"Fehler beim Verschieben von {pdf_path.name}: {e}")
 
 
-def process_existing_files(processor: PDFProcessor):
-    existing_files = [f for f in processor.config.watch_dir.iterdir()
-                      if f.suffix.lower() == '.pdf']
-
-    if existing_files:
-        processor.logger.info(f"Verarbeite {len(existing_files)} vorhandene PDFs")
-
-        for pdf_path in existing_files:
+def poll_directory(processor: PDFProcessor):
+    for f in processor.config.watch_dir.iterdir():
+        if f.suffix.lower() == '.pdf':
             try:
-                processor.process_pdf(pdf_path)
+                processor.process_pdf(f)
             except Exception as e:
-                processor.logger.error(f"Fehler bei {pdf_path.name}: {e}")
-                continue
+                processor.logger.error(f"Fehler bei {f.name}: {e}")
 
 
 def main():
@@ -257,28 +220,18 @@ def main():
 
     processor = PDFProcessor(config)
 
-    process_existing_files(processor)
+    config.logger.info(f"PDF-Überwachung gestartet: {config.watch_dir} (Polling-Intervall: {config.polling_interval}s)")
 
-    event_handler = PDFWatchHandler(processor)
-    observer = PollingObserver(timeout=config.polling_interval)
-    observer.schedule(event_handler, str(config.watch_dir), recursive=False)
-    observer.start()
-
-    config.logger.info(f"PDF-Überwachung gestartet: {config.watch_dir}")
-
-    import threading
     retry_thread = threading.Thread(target=retry_error_files, args=(processor,), daemon=True)
     retry_thread.start()
 
     try:
         while True:
-            time.sleep(1)
+            poll_directory(processor)
+            time.sleep(config.polling_interval)
     except KeyboardInterrupt:
-        observer.stop()
         config.logger.info("PDF-Überwachung beendet")
         raise
-
-    observer.join()
 
 
 if __name__ == "__main__":
