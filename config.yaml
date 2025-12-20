@@ -4,8 +4,6 @@ docling:
   host: 192.168.0.168
   port: 5001
   format: "md"
-  enable_ocr: true
-  force_ocr: true
   image_export_mode: "placeholder"
   ocr_engine: "easyocr"
 
