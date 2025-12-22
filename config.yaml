@@ -1,4 +1,6 @@
 watch_directory: "/mnt/scan"
+processed_directory: "/mnt/scan/Verarbeitet"
+error_directory: "/mnt/scan/Fehler"
 
 docling:
   host: 192.168.0.168

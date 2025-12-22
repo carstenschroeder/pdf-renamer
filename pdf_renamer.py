@@ -34,8 +34,8 @@ class Config:
             self.config = yaml.safe_load(f)
 
         self.watch_dir = Path(self.config['watch_directory'])
-        self.processed_dir = self.watch_dir / "Verarbeitet"
-        self.error_dir = self.watch_dir / "Fehler"
+        self.processed_dir = Path(self.config.get('processed_directory', self.watch_dir / "processed"))
+        self.error_dir = Path(self.config.get('error_directory', self.watch_dir / "error"))
 
         self.docling_host = self.config['docling']['host']
         self.docling_port = self.config['docling']['port']
