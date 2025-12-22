@@ -55,11 +55,19 @@ class Config:
 
         self._load_supported_extensions()
 
-        logging.basicConfig(
-            level=getattr(logging, self.config['logging']['level']),
-            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-        )
+        log_file = self.watch_dir / "pdf_renamer.log"
+        file_handler = logging.FileHandler(log_file, encoding='utf-8')
+        file_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+        file_handler.stream.reconfigure(line_buffering=True)
+
+        console_handler = logging.StreamHandler()
+        console_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+
         self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(getattr(logging, self.config['logging']['level']))
+        self.logger.handlers.clear()
+        self.logger.addHandler(file_handler)
+        self.logger.addHandler(console_handler)
 
     def _load_supported_extensions(self):
         configured_extensions = self.config.get('supported_extensions')
