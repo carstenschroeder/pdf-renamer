@@ -223,8 +223,6 @@ def retry_error_files(processor: DocumentProcessor):
     attempt_pattern = re.compile(r'_attempt(\d+)$')
 
     while True:
-        time.sleep(processor.config.retry_interval)
-
         error_files = [f for f in processor.config.error_dir.iterdir()
                        if processor.config.is_supported_file(f)]
 
@@ -260,6 +258,8 @@ def retry_error_files(processor: DocumentProcessor):
 
                 except Exception as e:
                     processor.logger.error(f"Fehler beim Verschieben von {doc_path.name}: {e}")
+
+        time.sleep(processor.config.retry_interval)
 
 
 def poll_directory(processor: DocumentProcessor):
