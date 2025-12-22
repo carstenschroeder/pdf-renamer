@@ -102,29 +102,13 @@ class DocumentProcessor:
             
             force_ocr = doc_path.suffix.lower() == '.pdf' and doc_path.name.startswith("Xerox Scan_")
 
-            with open(doc_path, 'rb') as f:
-                files = {'files': (doc_path.name, f, mime_type)}
-                data = {
-                    'from_formats': ["docx", "pptx", "html", "image", "pdf", "asciidoc", "md", "xlsx"],
-                    'to_formats': [self.config.docling_format],
-                    'do_ocr': True,
-                    'force_ocr': force_ocr,
-                    'image_export_mode': self.config.docling_image_export_mode,
-                    'ocr_engine': self.config.docling_ocr_engine
-                }
-
-                response = requests.post(docling_url, files=files, data=data, timeout=600)
-                response.raise_for_status()
-
-                result = response.json()
-
-                doc = result.get('document', {})
-                if self.config.docling_format == 'md':
-                    return doc.get('md_content', '')
-                elif self.config.docling_format == 'text':
-                    return doc.get('text_content', '')
-                else:
-                    return doc.get('md_content', doc.get('text_content', ''))
+            text = self._call_docling(docling_url, doc_path, mime_type, force_ocr)
+            
+            if not text and not force_ocr:
+                self.logger.info(f"Kein Text extrahiert, versuche erneut mit force_ocr=True: {doc_path.name}")
+                text = self._call_docling(docling_url, doc_path, mime_type, force_ocr=True)
+            
+            return text
 
         except requests.exceptions.HTTPError as e:
             self.logger.error(f"Fehler beim Extrahieren von Text aus {doc_path}: {e} - Response: {e.response.text}")
@@ -132,6 +116,33 @@ class DocumentProcessor:
         except Exception as e:
             self.logger.error(f"Fehler beim Extrahieren von Text aus {doc_path}: {e}")
             return None
+
+    def _call_docling(self, docling_url: str, doc_path: Path, mime_type: str, force_ocr: bool) -> Optional[str]:
+        with open(doc_path, 'rb') as f:
+            files = {'files': (doc_path.name, f, mime_type)}
+            data = {
+                'from_formats': ["docx", "pptx", "html", "image", "pdf", "asciidoc", "md", "xlsx"],
+                'to_formats': [self.config.docling_format],
+                'do_ocr': True,
+                'force_ocr': force_ocr,
+                'image_export_mode': self.config.docling_image_export_mode,
+                'ocr_engine': self.config.docling_ocr_engine
+            }
+
+            response = requests.post(docling_url, files=files, data=data, timeout=600)
+            response.raise_for_status()
+
+            result = response.json()
+
+            doc = result.get('document', {})
+            if self.config.docling_format == 'md':
+                text = doc.get('md_content', '')
+            elif self.config.docling_format == 'text':
+                text = doc.get('text_content', '')
+            else:
+                text = doc.get('md_content', doc.get('text_content', ''))
+            
+            return text if text and text.strip() else None
     
     def generate_summary(self, text: str) -> Optional[str]:
         try:
