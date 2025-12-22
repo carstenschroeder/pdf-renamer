@@ -41,7 +41,7 @@ class Config:
         self.docling_port = self.config['docling']['port']
         self.docling_format = self.config['docling']['format']
 
-        self.docling_image_export_mode = self.config['docling'].get('image_export_mode', 'none')
+        self.docling_image_export_mode = self.config['docling'].get('image_export_mode', 'placeholder')
         self.docling_ocr_engine = self.config['docling'].get('ocr_engine', 'easyocr')
 
         self.ollama_host = self.config['ollama']['host']
