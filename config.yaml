@@ -12,7 +12,8 @@ docling:
 ollama:
   host: 192.168.0.168
   port: 11434
-  model: gpt-oss:20b
+  model: gemma4:26b
+#  model: gpt-oss:20b
   prompt: > 
     Ich werde dir nun den Text eines Dokuments geben. Du sollst dazu einen Namen erzeugen, aus dem man den Inhalt des Dokumentserkennen kann.
     Bei einer Rechnung soll der Namen aus dem Absender, der Rechnungsnummer, dem Datum und dem gekauftem Produkt bestehen, z.B. 'Rechnung_Bäckerei_Schumacher_1740946_01.04.2024_10_Brötchen'.
